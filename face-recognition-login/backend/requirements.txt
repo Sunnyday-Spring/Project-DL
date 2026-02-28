@@ -5,3 +5,4 @@ face-recognition
 opencv-python
 Pillow
 numpy
+ultralytics
