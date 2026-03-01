@@ -37,11 +37,11 @@ class FaceSystem:
                 coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
                 
                 # 1. กรองความมั่นใจ: ตั้งไว้ที่ 15% ชั่วคราวเพื่อให้โมเดลใหม่จับได้ง่ายขึ้น
-                if confidence < 0.60:
+                if confidence < 0.70:
                     continue
                 
                 # 🔴 2. เช็คว่าเป็นหมวกหรือไม่แบบฉลาด (Smart Keyword)
-                hat_keywords = ['cap', 'helmet', 'baseball']
+                hat_keywords = ['cap', 'helmet', 'baseball','hat']
                 
                 # ถ้าคำใดคำหนึ่งใน hat_keywords ไปโผล่อยู่ในชื่อที่ AI ส่งมา ถือว่าเป็นหมวกทันที!
                 is_hat = any(keyword in clean_label for keyword in hat_keywords)

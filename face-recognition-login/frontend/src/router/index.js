@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
-// 🔴 1. เปลี่ยนตรงนี้: ดึงหน้า LoginView มาเป็นหน้าแรกสุดแทน QuickLoginView
+// ดึงหน้า LoginView มาเป็นหน้าแรกสุด
 import HomeView from '../views/LoginView.vue'
 
 const router = createRouter({
@@ -10,7 +10,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView // ตอนนี้เปิดมาจะเป็นหน้า Login ขาวๆ ม่วงๆ แล้วครับ
+      component: HomeView 
     },
     {
       path: '/register',
@@ -20,7 +20,6 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      // 🔴 2. เปลี่ยนตรงนี้: ให้ชี้ไปที่หน้า LoginView
       component: () => import('../views/LoginView.vue')
     },
     {
@@ -31,12 +30,14 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: () => import('../views/QuickLoginView.vue'), // ตรงนี้ชี้ไปหน้า Dashboard เมื่อทำเสร็จ (ตอนนี้เอาไว้สแกนชั่วคราว)
+      // 🔴 แก้ไขตรงนี้: เปลี่ยนจาก QuickLoginView เป็น DashboardView เพื่อเข้าหน้าร้าน F1
+      component: () => import('../views/DashboardView.vue'), 
       meta: { requiresAuth: true }
     }
   ]
 })
 
+// ระบบป้องกัน: ถ้ายังไม่ได้ล็อกอิน จะเข้าหน้า dashboard ไม่ได้ และโดนเตะกลับมาหน้า login
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
