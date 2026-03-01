@@ -27,29 +27,34 @@ class FaceSystem:
             
             for box in results.boxes:
                 class_id = int(box.cls[0])
-                label = results.names[class_id].lower()
+                # ดึงชื่อคลาสที่ AI พ่นออกมาจริงๆ
+                original_label = results.names[class_id]
+                
+                # 🔴 1. เคลียร์ชื่อให้สะอาด (ลบตัวใหญ่ เปลี่ยน - หรือ _ เป็นช่องว่าง)
+                clean_label = original_label.lower().replace('-', ' ').replace('_', ' ')
+                
                 confidence = float(box.conf[0])
                 coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
                 
-                # 1. กรองความมั่นใจ: ถ้าต่ำกว่า 60% ให้ข้ามไปเลย (กันความผิดพลาดจับผมเป็นหมวก)
-                if confidence < 0.15:
+                # 1. กรองความมั่นใจ: ตั้งไว้ที่ 15% ชั่วคราวเพื่อให้โมเดลใหม่จับได้ง่ายขึ้น
+                if confidence < 0.60:
                     continue
                 
-                # 2. เช็คว่าเป็นหมวกหรือไม่
-                is_hat = label in ['hat', 'cap', 'helmet', 
-    'baseball cap', 'beanie', 'beret', 'boater', 
-    'floppy', 'bucket hat', 'bowler', 'bobble hat', 
-    'fedora', 'newsboy cap']
+                # 🔴 2. เช็คว่าเป็นหมวกหรือไม่แบบฉลาด (Smart Keyword)
+                hat_keywords = ['cap', 'helmet', 'baseball']
+                
+                # ถ้าคำใดคำหนึ่งใน hat_keywords ไปโผล่อยู่ในชื่อที่ AI ส่งมา ถือว่าเป็นหมวกทันที!
+                is_hat = any(keyword in clean_label for keyword in hat_keywords)
                 
                 # 3. สำคัญที่สุด: ถ้า "ไม่ใช่หมวก" ให้ข้ามไปเลย ไม่ต้องนำไปวาดกรอบ!
                 if not is_hat:
                     continue
                 
-                # ถ้าผ่านมาถึงตรงนี้ แสดงว่าเป็น "หมวก" ที่มั่นใจเกิน 60%
+                # ถ้าผ่านมาถึงตรงนี้ แสดงว่าเป็น "หมวก" 
                 hat_detected = True
                 
-                # พิมพ์ลง Terminal เพื่อให้ตรวจสอบได้ง่าย
-                print(f"   -> 🟢 เจอหมวก: '{label}' (ความมั่นใจ: {confidence*100:.2f}%)")
+                # พิมพ์ลง Terminal เพื่อให้ตรวจสอบได้ว่า AI ตัวใหม่มันแอบเรียกหมวกว่าอะไร
+                print(f"   -> 🟢 เจอหมวก: '{original_label}' (ความมั่นใจ: {confidence*100:.2f}%)")
                 
                 detected_boxes.append({
                     "coords": coords,

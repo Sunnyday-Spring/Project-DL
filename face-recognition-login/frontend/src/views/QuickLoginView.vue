@@ -134,7 +134,8 @@ const stopScanning = () => {
 const processLoop = async () => {
   if (!loopActive || identified.value) return
   await handleIdentify()
-  setTimeout(processLoop, 150) 
+  // 🔴 เร่งความเร็วการวนลูป เพื่อให้กรอบสมูทขึ้น (จาก 150 เหลือ 50)
+  setTimeout(processLoop, 50) 
 }
 
 const handleIdentify = async () => {
@@ -150,14 +151,14 @@ const handleIdentify = async () => {
       allMatches.value = res.all_matches || []
       lightingStatus.value = res.lighting_status || 'NORMAL'
       
-      // ดึงคะแนนใบหน้ามาโชว์
       if (res.all_matches && res.all_matches.length > 0) {
         faceConfidence.value = Math.floor(res.all_matches[0].confidence)
       } else {
         faceConfidence.value = 0
       }
       
-      if (res.details?.boxes) drawBoxes(res.details.boxes)
+      // 🔴 บังคับให้ส่งไปวาดกรอบเสมอ ต่อให้ไม่เจออะไรก็ตาม เพื่อล้างกรอบค้าง!
+      drawBoxes(res.details?.boxes || [])
 
       if (res.identified) {
         identified.value = true
@@ -175,21 +176,35 @@ const handleIdentify = async () => {
 
 const drawBoxes = (boxes) => {
   if (!overlayCanvas.value) return
-  const ctx = overlayCanvas.value.getContext('2d')
-  ctx.clearRect(0, 0, overlayCanvas.value.width, overlayCanvas.value.height)
+  const canvas = overlayCanvas.value
+  const ctx = canvas.getContext('2d')
+  
+  // ล้างหน้าจอเก่าทุกครั้ง
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  
+  // ถ้าไม่มีกล่องให้วาด ก็จบการทำงานแค่นี้ (กรอบเก่าจะหายไป)
+  if (!boxes || boxes.length === 0) return
   
   boxes.forEach(box => {
-    const [x1, y1, x2, y2] = box.coords
+    // พิกัดต้นฉบับจาก AI
+    const [origX1, y1, origX2, y2] = box.coords
+    
+    // 🔴 พลิกพิกัด X ให้ตรงกับวิดีโอที่ถูกสะท้อนกระจก (Mirror)
+    // ทำให้กรอบตรงเป๊ะ และตัวอักษรอ่านง่ายไม่กลับด้าน!
+    const x1 = canvas.width - origX2
+    const x2 = canvas.width - origX1
+
     ctx.strokeStyle = box.is_hat ? '#00ff00' : '#00ccff'
-    ctx.lineWidth = 5
+    ctx.lineWidth = 4
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
     
     // วาดพื้นหลังให้ตัวอักษรอ่านง่าย
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
-    ctx.fillRect(x1, y1 - 30, ctx.measureText(box.label.toUpperCase()).width + 10, 30)
+    const textWidth = ctx.measureText(box.label.toUpperCase()).width
+    ctx.fillRect(x1, y1 - 30, textWidth + 10, 30)
     
     ctx.fillStyle = ctx.strokeStyle
-    ctx.font = 'bold 20px Arial'
+    ctx.font = 'bold 18px Arial'
     ctx.fillText(`${box.label.toUpperCase()}`, x1 + 5, y1 - 8)
   })
 }
@@ -200,7 +215,8 @@ const capture = () => {
   canvas.width = videoElement.value.videoWidth
   canvas.height = videoElement.value.videoHeight
   canvas.getContext('2d').drawImage(videoElement.value, 0, 0)
-  return new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.8))
+  // ปรับคุณภาพรูปลดลงนิดนึง (0.6) เพื่อให้ส่งผ่านเน็ตได้ไวขึ้น กรอบจะได้ไม่กระตุก
+  return new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.6))
 }
 
 const resetState = () => {
@@ -221,9 +237,24 @@ onUnmounted(stopScanning)
 .header-section h1 { font-size: 1.8rem; color: #38bdf8; margin: 0; }
 .main-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; padding: 20px; }
 .glass-morphism { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-.video-container { background: #000; border-radius: 15px; position: relative; overflow: hidden; width: 100%; max-width: 540px; margin: 0 auto; aspect-ratio: 4/3; }
+
+/* 🔴 แก้ไขสัดส่วนให้ตรงกับวิดีโอ (14:9) เพื่อไม่ให้กรอบลอย */
+.video-container { 
+  background: #000; 
+  border-radius: 15px; 
+  position: relative; 
+  overflow: hidden; 
+  width: 100%; 
+  max-width: 640px; 
+  margin: 0 auto; 
+  aspect-ratio: 14/9; 
+}
+
 video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-.overlay-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transform: scaleX(-1); z-index: 2; }
+
+/* 🔴 เอา transform: scaleX(-1) ออกจาก Canvas จะได้อ่านชื่อออก */
+.overlay-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+
 .env-alerts { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 8px; z-index: 4; }
 .alert-item { padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; animation: pulse 1.5s infinite; }
 .alert-item.warning { background: rgba(234, 179, 8, 0.9); color: #422006; }
