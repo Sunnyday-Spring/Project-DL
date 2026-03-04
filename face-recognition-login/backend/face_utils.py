@@ -37,7 +37,7 @@ class FaceSystem:
                 coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
                 
                 # 1. กรองความมั่นใจ: ตั้งไว้ที่ 15% ชั่วคราวเพื่อให้โมเดลใหม่จับได้ง่ายขึ้น
-                if confidence < 0.70:
+                if confidence < 0.60:
                     continue
                 
                 # 🔴 2. เช็คว่าเป็นหมวกหรือไม่แบบฉลาด (Smart Keyword)
